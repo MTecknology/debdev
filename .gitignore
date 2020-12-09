@@ -1,0 +1,10 @@
+# Dotfiles
+.*
+!/.gitignore
+!/.dotfiles
+!/.dotfiles/*
+
+# Vagrant
+/.vagrant/**
+!/.vagrant
+!/.vagrant/bootstrap

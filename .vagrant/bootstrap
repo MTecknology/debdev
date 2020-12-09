@@ -1,0 +1,94 @@
+#!/bin/bash
+##
+# Set up a vagrant instance for .deb development.
+##
+#set -x
+
+
+##
+# Main
+##
+
+
+main() {
+	hacks		|| die 'Hacks broke.'
+	update_system	|| die 'Unable to update systems.'
+	install_deps	|| die 'Unable to install package dependencies.'
+	prep_home	|| die 'Unable to configure home environment.'
+	build_images	|| die 'Unable to build images.'
+	touch /.configured
+}
+
+
+##
+# Main functions
+##
+
+
+hacks() {
+	echo 'grub-pc hold' | sudo dpkg --set-selections
+}
+
+
+prep_home() {
+	mkdir -p /var/cache/pbuilder/deps 
+	ln -s /var/cache/pbuilder/deps /home/vagrant/.pbuild_pkgs
+
+	for path in /home/vagrant/.sync/.*; do
+		file="$(basename "$path")" || return 1
+		[ -f "$path" ] || continue
+		ln -sf "$path" "/home/vagrant/$file" || return 1
+	done
+}
+
+
+update_system() {
+	apt-get update
+	DEBIAN_FRONTEND=noninteractive apt-get -yq \
+		-o Dpkg::Options::="--force-confdef" \
+		-o Dpkg::Options::="--force-confold" \
+		dist-upgrade || return 1
+	apt-get -y autoremove
+}
+
+install_deps() {
+	apt-get update
+	DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
+		vim screen build-essential cowbuilder devscripts git-buildpackage \
+		gnupg2 git pristine-tar debhelper lintian quilt dh-python
+}
+
+
+build_images() {
+	for arch in i386 amd64; do
+		for suite in experimental unstable stable; do
+			sudo cowbuilder --create \
+				--basepath="/var/cache/pbuilder/base-$suite-$arch.cow" \
+				--distribution="$suite" \
+				--architecture "$arch"
+		done
+	done
+}
+
+
+##
+# Helper Functions
+##
+
+
+die() {
+	[[ "$*" ]] && printf '*** %s ***' "$*"
+	exit 1
+}
+
+
+sv() {
+	sudo -u vagrant $@
+}
+
+
+##
+# Run main()
+##
+
+main

@@ -1,0 +1,12 @@
+[user]
+	name = FIRST LAST  # TODO
+	email = USER@DOMAIN.TLD  # TODO
+	signingkey = 0123456789ABCDEF0123456789ABCDEF01234567  # TODO
+[push]
+	default = simple
+[core]
+	quotepath = false
+[http]
+	sslverify = true
+[commit]
+	gpgsign = true

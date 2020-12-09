@@ -1,0 +1,33 @@
+# Misc.
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
+
+# Debian Dev
+alias dput-ssh='dput ssh.upload.debian.org'
+alias lintian-check='lintian -EviIL +pedantic' # file.changes
+alias git-view='git log --all --graph --decorate --oneline --simplify-by-decoration'
+alias build-unstable='rm -f debian/files; gbp buildpackage --git-pbuilder --git-dist=unstable --git-arch=amd64'
+alias pbuilder-dist='echo NO #'
+build() {
+	# example: build stable 32
+	dist="$1"; shift
+	arch="$2"; shift
+	[[ "$arch" == '32' ]] && arch='i386'
+	[[ "$arch" == '64' ]] && arch='amd64'
+	rm -f debian/files
+	gbp buildpackage --git-pbuilder \
+		--git-dist="$dist" \
+		--git-arch="$arch" "$@"
+}
+update_builders() {
+	for arch in i386 amd64; do
+		for suite in experimental unstable stable; do
+			sudo cowbuilder --update --override-config \
+				--basepath="/var/cache/pbuilder/base-$suite-$arch.cow" \
+				--distribution="$suite" \
+				--architecture "$arch"
+		done
+	done
+}

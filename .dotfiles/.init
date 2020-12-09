@@ -1,0 +1,75 @@
+#!/bin/sh
+##
+# Create a copy of dotfiles.
+##
+
+
+main() {
+	read_options "$@"
+	if [ "$USE_SYMLINKS" = 'true' ]; then
+		copy_symlinks
+	else
+		copy_files
+	fi
+	[ "$SYNC_SYMLINKS" = 'true' ] && sync_symlinks
+}
+
+
+read_options() {
+	USE_SYMLINKS='true'
+	SYNC_SYMLINKS='true'
+	QUIET='false'
+	while getopts 'nsh' OPTARG; do
+		case "$OPT" in
+			n) USE_SYMLINKS='false';;
+			s) SYNC_SYMLINKS='false';;
+			q) QUIET='true';;
+			h) show_help; exit 1;;
+			*) echo "Invalid Option: '$OPT'"; exit 255;;
+		esac
+	done
+}
+
+show_help() {
+	cat <<-EOF
+	Usage $0 <options>
+
+	Options:
+	  -n\tNo symlinks; only copy
+	  -s\nDon't symlink files to .sync/
+	  -q\tQuiet (no non-error messages)
+	  -h\tShow this help text and exit
+	EOF
+}
+
+
+copy_files() {
+	for file in .dotfiles/*; do
+		cp "$file" ".${file##*/}"
+	done
+}
+
+
+copy_symlinks() {
+	for file in .dotfiles/*; do
+		if grep -q TODO "$file"; then
+			[ "$QUIET" = 'true' ] ||
+				printf 'Please edit %s\n' ".${file##*/}"
+			cp "$file" ".${file##*/}"
+		else
+			ln -s "$file" ".${file##*/}"
+		fi
+	done
+}
+
+
+sync_symlinks() {
+	find . -maxdepth 1 -name '.*' -type f | while read -r file; do
+		file="${file##*/}"
+		[ "$file" = '.gitignore' ] && continue
+		ln -s "$file" ".sync/$file"
+	done
+}
+
+
+main "$@"
